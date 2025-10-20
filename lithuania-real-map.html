@@ -19,7 +19,6 @@
             overflow-x: hidden;
         }
         
-        /* Hero Section */
         .hero {
             min-height: 100vh;
             display: flex;
@@ -72,7 +71,6 @@
             transform: scale(1.02);
         }
         
-        /* Map Section */
         .map-section {
             min-height: 100vh;
             padding: 80px 0;
@@ -123,7 +121,6 @@
             box-shadow: 0 40px 80px rgba(0,0,0,0.2);
         }
         
-        /* Controls */
         .controls {
             margin-top: 48px;
             text-align: center;
@@ -162,7 +159,6 @@
             background: #0077ed;
         }
         
-        /* Tooltip styling */
         .region-tooltip {
             background: rgba(0, 0, 0, 0.92);
             color: #f5f5f7;
@@ -206,7 +202,6 @@
             background: #0077ed;
         }
         
-        /* Animations */
         @keyframes fadeInUp {
             from {
                 opacity: 0;
@@ -218,7 +213,6 @@
             }
         }
         
-        /* Responsive */
         @media (max-width: 768px) {
             #map {
                 height: 400px;
@@ -237,7 +231,6 @@
     </style>
 </head>
 <body>
-    <!-- Hero Section -->
     <section class="hero">
         <h1>Lithuania</h1>
         <p class="subtitle">Explore all 60 municipalities with real geographic boundaries</p>
@@ -246,7 +239,6 @@
         </button>
     </section>
     
-    <!-- Map Section -->
     <section class="map-section">
         <div class="section-header">
             <h2>Interaktyvus Žemėlapis</h2>
@@ -268,11 +260,10 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // Lithuanian name corrections - map English/incorrect names to proper Lithuanian
         const lithuanianNames = {
             'Siauliu Miestas': 'Šiaulių miesto savivaldybė',
             'Šiaulių Miestas': 'Šiaulių miesto savivaldybė',
-            'Siauliai': 'Šiaulių rajonο savivaldybė',
+            'Siauliai': 'Šiaulių rajono savivaldybė',
             'Šiauliai': 'Šiaulių rajono savivaldybė',
             'Pasvalys': 'Pasvalio rajono savivaldybė',
             'Plunge': 'Plungės rajono savivaldybė',
@@ -332,15 +323,12 @@
             'Zarasai': 'Zarasų rajono savivaldybė'
         };
         
-        // Function to get proper Lithuanian name
         function getLithuanianName(name) {
             return lithuanianNames[name] || name;
         }
         
-        // Initialize map
         let map = L.map('map').setView([55.1694, 23.8813], 7);
         
-        // Add tile layer
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '© OpenStreetMap contributors'
         }).addTo(map);
@@ -352,33 +340,26 @@
             '#27ae60', '#2980b9', '#8e44ad', '#f1c40f', '#d35400'
         ];
         
-        // Load and display GeoJSON
         fetch('lithuania-real.geojson')
             .then(response => response.json())
             .then(data => {
-                console.log('Loaded data:', data);
-                
                 geoJsonLayer = L.geoJSON(data, {
-                    style: function(feature) {
-                        return {
-                            color: '#3498db',
-                            weight: 1,
-                            fillOpacity: 0.5,
-                            fillColor: '#3498db'
-                        };
+                    style: {
+                        color: '#3498db',
+                        weight: 1,
+                        fillOpacity: 0.5,
+                        fillColor: '#3498db'
                     },
                     onEachFeature: function(feature, layer) {
                         const originalName = feature.properties.name || 'Nežinomas';
                         const displayName = getLithuanianName(originalName);
                         
-                        // Add tooltip that shows on hover
                         layer.bindTooltip(displayName, {
                             permanent: false,
                             direction: 'center',
                             className: 'region-tooltip'
                         });
                         
-                        // Add popup on click
                         layer.bindPopup(`
                             <div style="min-width: 220px;">
                                 <h3 style="margin: 0 0 12px 0; color: #1d1d1f; font-size: 19px; font-weight: 600;">${displayName}</h3>
@@ -388,37 +369,28 @@
                         `);
                         
                         layer.on('mouseover', function() {
-                            this.setStyle({
-                                weight: 3,
-                                fillOpacity: 0.7
-                            });
+                            this.setStyle({ weight: 3, fillOpacity: 0.7 });
                         });
                         
                         layer.on('mouseout', function() {
-                            this.setStyle({
-                                weight: 1,
-                                fillOpacity: 0.5
-                            });
+                            this.setStyle({ weight: 1, fillOpacity: 0.5 });
                         });
                     }
                 }).addTo(map);
                 
-                // Fit map to bounds
                 map.fitBounds(geoJsonLayer.getBounds());
             })
-            .catch(error => {
-                console.error('Error loading GeoJSON:', error);
-                alert('Klaida įkeliant žemėlapį! Patikrinkite ar failas "lithuania-real.geojson.json" yra teisingoje vietoje.');
+            .catch(() => {
+                alert('Klaida įkeliant žemėlapį! Patikrinkite interneto ryšį.');
             });
         
-        // Color specific region
         function colorRegion(regionName) {
             if (!geoJsonLayer) return;
             
             const colors = {
-                'Vilnius': '#27ae60',  // Green
-                'Kaunas': '#e74c3c',    // Red
-                'Klaipeda': '#3498db'   // Blue
+                'Vilnius': '#27ae60',
+                'Kaunas': '#e74c3c',
+                'Klaipeda': '#3498db'
             };
             
             geoJsonLayer.eachLayer(function(layer) {
@@ -442,7 +414,6 @@
             });
         }
         
-        // Highlight specific region
         function highlightThis(regionName) {
             if (!geoJsonLayer) return;
             
@@ -460,7 +431,6 @@
             });
         }
         
-        // Color all regions with different colors
         function colorAllDifferent() {
             if (!geoJsonLayer) return;
             
@@ -477,7 +447,6 @@
             });
         }
         
-        // Reset all colors
         function resetColors() {
             if (!geoJsonLayer) return;
             
@@ -490,8 +459,6 @@
                 });
             });
         }
-        
-        console.log('Lietuvos žemėlapis su tikromis ribomis įkeltas! 🇱🇹');
     </script>
 </body>
 </html>
