@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="lt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🇱🇹 Lietuvos žemėlapis</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .header h1 {
+            color: #2c3e50;
+            margin: 0;
+        }
+        
+        #map {
+            height: 75vh;
+            width: 100%;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .controls {
+            margin-top: 20px;
+            text-align: center;
+        }
+        
+        .control-btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .control-btn:hover {
+            background: #2980b9;
+        }
+        
+        .control-btn.green {
+            background: #27ae60;
+        }
+        
+        .control-btn.green:hover {
+            background: #229954;
+        }
+        
+        .control-btn.red {
+            background: #e74c3c;
+        }
+        
+        .control-btn.red:hover {
+            background: #c0392b;
+        }
+        
+        /* Tooltip styling */
+        .region-tooltip {
+            background: rgba(44, 62, 80, 0.9);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 8px 12px;
+            font-size: 14px;
+            font-weight: bold;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+        
+        .leaflet-tooltip-center {
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🇱🇹 Lietuvos Žemėlapis su Tikromis Ribomis</h1>
+        <p>60 Lietuvos savivaldybių su tikromis geografinėmis ribomis</p>
+    </div>
+    
+    <div id="map"></div>
+    
+    <div class="controls">
+        <button class="control-btn green" onclick="colorRegion('Vilnius')">Vilnius žaliai</button>
+        <button class="control-btn red" onclick="colorRegion('Kaunas')">Kaunas raudonai</button>
+        <button class="control-btn" onclick="colorRegion('Klaipeda')">Klaipėda mėlynai</button>
+        <button class="control-btn" onclick="colorAllDifferent()">Spalvoti visus</button>
+        <button class="control-btn" onclick="resetColors()">Atstatyti spalvas</button>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // Initialize map
+        let map = L.map('map').setView([55.1694, 23.8813], 7);
+        
+        // Add tile layer
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+        
+        let geoJsonLayer;
+        let allColors = [
+            '#e74c3c', '#3498db', '#2ecc71', '#f39c12', '#9b59b6', 
+            '#1abc9c', '#e67e22', '#34495e', '#16a085', '#c0392b',
+            '#27ae60', '#2980b9', '#8e44ad', '#f1c40f', '#d35400'
+        ];
+        
+        // Load and display GeoJSON
+        fetch('lithuania-real.geojson')
+            .then(response => response.json())
+            .then(data => {
+                console.log('Loaded data:', data);
+                
+                geoJsonLayer = L.geoJSON(data, {
+                    style: function(feature) {
+                        return {
+                            color: '#3498db',
+                            weight: 1,
+                            fillOpacity: 0.5,
+                            fillColor: '#3498db'
+                        };
+                    },
+                    onEachFeature: function(feature, layer) {
+                        const name = feature.properties.name || 'Nežinomas';
+                        
+                        // Add tooltip that shows on hover
+                        layer.bindTooltip(name, {
+                            permanent: false,
+                            direction: 'center',
+                            className: 'region-tooltip'
+                        });
+                        
+                        // Add popup on click
+                        layer.bindPopup(`
+                            <div style="min-width: 200px;">
+                                <h3 style="margin: 0 0 10px 0; color: #2c3e50;">${name}</h3>
+                                <p><strong>Tipas:</strong> Savivaldybė</p>
+                                <button onclick="highlightThis('${name}')" style="background: #27ae60; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer;">Pažymėti žaliai</button>
+                            </div>
+                        `);
+                        
+                        layer.on('mouseover', function() {
+                            this.setStyle({
+                                weight: 3,
+                                fillOpacity: 0.7
+                            });
+                        });
+                        
+                        layer.on('mouseout', function() {
+                            this.setStyle({
+                                weight: 1,
+                                fillOpacity: 0.5
+                            });
+                        });
+                    }
+                }).addTo(map);
+                
+                // Fit map to bounds
+                map.fitBounds(geoJsonLayer.getBounds());
+            })
+            .catch(error => {
+                console.error('Error loading GeoJSON:', error);
+                alert('Klaida įkeliant žemėlapį! Patikrinkite ar failas "lithuania-real.geojson.json" yra teisingoje vietoje.');
+            });
+        
+        // Color specific region
+        function colorRegion(regionName) {
+            if (!geoJsonLayer) return;
+            
+            const colors = {
+                'Vilnius': '#27ae60',  // Green
+                'Kaunas': '#e74c3c',    // Red
+                'Klaipeda': '#3498db'   // Blue
+            };
+            
+            geoJsonLayer.eachLayer(function(layer) {
+                const name = layer.feature.properties.name || '';
+                
+                if (name.includes(regionName)) {
+                    layer.setStyle({
+                        fillColor: colors[regionName] || '#27ae60',
+                        color: colors[regionName] || '#27ae60',
+                        weight: 2,
+                        fillOpacity: 0.7
+                    });
+                } else {
+                    layer.setStyle({
+                        fillColor: '#3498db',
+                        color: '#3498db',
+                        weight: 1,
+                        fillOpacity: 0.3
+                    });
+                }
+            });
+        }
+        
+        // Highlight specific region
+        function highlightThis(regionName) {
+            if (!geoJsonLayer) return;
+            
+            geoJsonLayer.eachLayer(function(layer) {
+                const name = layer.feature.properties.name || '';
+                
+                if (name === regionName) {
+                    layer.setStyle({
+                        fillColor: '#27ae60',
+                        color: '#27ae60',
+                        weight: 3,
+                        fillOpacity: 0.8
+                    });
+                }
+            });
+        }
+        
+        // Color all regions with different colors
+        function colorAllDifferent() {
+            if (!geoJsonLayer) return;
+            
+            let index = 0;
+            geoJsonLayer.eachLayer(function(layer) {
+                const color = allColors[index % allColors.length];
+                layer.setStyle({
+                    fillColor: color,
+                    color: color,
+                    weight: 1,
+                    fillOpacity: 0.6
+                });
+                index++;
+            });
+        }
+        
+        // Reset all colors
+        function resetColors() {
+            if (!geoJsonLayer) return;
+            
+            geoJsonLayer.eachLayer(function(layer) {
+                layer.setStyle({
+                    fillColor: '#3498db',
+                    color: '#3498db',
+                    weight: 1,
+                    fillOpacity: 0.5
+                });
+            });
+        }
+        
+        console.log('Lietuvos žemėlapis su tikromis ribomis įkeltas! 🇱🇹');
+    </script>
+</body>
+</html>
